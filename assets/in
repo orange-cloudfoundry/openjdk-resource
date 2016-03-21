@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+set -e
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+destination=$1
+
+if [ -z "$destination" ]; then
+  echo "usage: $0 <path/to/destination>" >&2
+  exit 1
+fi
+
+# for jq
+PATH=/usr/local/bin:$PATH
+
+
+payload=$(mktemp $TMPDIR/openjdk-resource-request.XXXXXX)
+
+# putting things you get from stdin to payload
+cat > $payload <&0
+
+arch=$(jq -r '.source.repository // ""' < $payload)
+platform=$(jq -r '.source.platform // ""' < $payload)
+current_version=$(jq -r '.version.version // ""' < $payload)
+fetch_tarball=$(jq -r '.params.tarball != false' < $payload)
+
+if [ -z "$arch" ]; then
+  arch="x64"
+fi
+
+if [ -z "$platform" ]; then
+  platform="linux"
+fi
+
+if [ -z "$version" ]; then
+  echo "must specify version"
+  exit 1
+fi
+
+destination=$1
+
+if [ -z "$destination" ]; then
+  echo "usage: $0 <path/to/destination>" >&2
+  exit 1
+fi
+
+mkdir -p $destination
+
+download_url="https://bosh.io/d/github.com/${repository}?v=${version}"
+
+echo "$download_url" > $destination/url
+echo "$version" > $destination/version
+
+if [ "$fetch_tarball" = "true" ]; then
+  curl --retry 5 --fail -L "$download_url" -o $destination/release.tgz
+  wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" ${download_url}
+fi
+
+jq -n '{
+  version: {
+    version: $version
+  },
+  metadata: [
+    {name: "url", value: $url}
+  ]
+}' --arg version "$version" --arg url "$download_url" >&3

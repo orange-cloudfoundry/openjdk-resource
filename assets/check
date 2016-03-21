@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -e
+
+set -x
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+# for jq
+PATH=/usr/local/bin:$PATH
+
+
+payload=$(mktemp $TMPDIR/openjdk-resource-request.XXXXXX)
+
+# putting things you get from stdin to payload
+cat > $payload <&0
+
+arch=$(jq -r '.source.repository // ""' < $payload)
+platform=$(jq -r '.source.platform // ""' < $payload)
+current_version=$(jq -r '.version.version // ""' < $payload)
+
+if [ -z "$arch" ]; then
+  arch="x64"
+fi
+
+if [ -z "$platform" ]; then
+  platform="linux"
+fi
+
+
+
+releases=$(mktemp $TMPDIR/openjdk-resource-versions.XXXXXX)
+
+last_idx=0
+if [ -z "$current_version" ]; then
+  echo "First execution detected; using latest..."
+  last_idx=1
+fi
+
+curl --retry 5 -L -s -f https://jdk8.java.net/download.html -o $releases
+
+#JDK_URL=http://www.java.net/download/jdk8u76/archive/b04/binaries/jdk-8u76-ea-bin-b04-linux-x64-25_jan_2016.tar.gz
+JDK_URL=$(echo "$releases" |grep ${platform} |grep "binaries/jdk" | grep ${arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
+
+echo "Cheking url: $JDK_URL"
+
+version=$(echo $JDK_URL| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
+
+if [ "${version}" != "${current_version}" ]
+then
+    jq -n '{
+      version: {
+        name: $version, url: $url
+      }
+    }' --arg version "$version" --arg url "$download_url" >&3
+else
+    jq -n '{}' >&3
+fi
+
+
+echo $result >&3
+
+set +x
