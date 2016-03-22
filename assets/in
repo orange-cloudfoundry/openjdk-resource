@@ -1,6 +1,8 @@
 #!/bin/sh
 
 set -e
+set -x
+
 
 exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
@@ -16,7 +18,7 @@ fi
 PATH=/usr/local/bin:$PATH
 
 
-payload=$(mktemp $TMPDIR/openjdk-resource-request.XXXXXX)
+payload=$(mktemp -t $TMPDIR/openjdk-resource-in-request.XXXXXX)
 
 # putting things you get from stdin to payload
 cat > $payload <&0
@@ -39,16 +41,21 @@ if [ -z "$version" ]; then
   exit 1
 fi
 
-destination=$1
-
-if [ -z "$destination" ]; then
-  echo "usage: $0 <path/to/destination>" >&2
-  exit 1
-fi
 
 mkdir -p $destination
 
-download_url="https://bosh.io/d/github.com/${repository}?v=${version}"
+
+download_url=$(curl --retry 5 -L -s -f https://jdk8.java.net/download.html |grep ${platform} |grep "binaries/jdk" | grep ${arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
+echo "Cheking url: ${download_url}"
+
+detected_version=$(echo ${download_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
+echo "detected_version: ${detected_version}"
+
+if [ "${detected_version}" != "${version}" ]
+then
+    echo " Detected version (${detected_version}) does not match 'in version' (${version})"
+    exit 1
+fi
 
 echo "$download_url" > $destination/url
 echo "$version" > $destination/version
@@ -66,3 +73,5 @@ jq -n '{
     {name: "url", value: $url}
   ]
 }' --arg version "$version" --arg url "$download_url" >&3
+
+set +x
