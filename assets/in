@@ -21,12 +21,12 @@ PATH=/usr/local/bin:$PATH
 payload=$(mktemp -t $TMPDIR/openjdk-resource-in-request.XXXXXX)
 
 # putting things you get from stdin to payload
-cat > $payload <&0
+cat > ${payload} <&0
 
-arch=$(jq -r '.source.repository // ""' < $payload)
-platform=$(jq -r '.source.platform // ""' < $payload)
-current_version=$(jq -r '.version.version // ""' < $payload)
-fetch_tarball=$(jq -r '.params.tarball != false' < $payload)
+arch=$(jq -r '.source.repository // ""' < ${payload})
+platform=$(jq -r '.source.platform // ""' < ${payload})
+version=$(jq -r '.version.version // ""' < ${payload})
+fetch_tarball=$(jq -r '.params.tarball != false' < ${payload})
 
 if [ -z "$arch" ]; then
   arch="x64"
@@ -42,7 +42,7 @@ if [ -z "$version" ]; then
 fi
 
 
-mkdir -p $destination
+mkdir -p ${destination}
 
 
 download_url=$(curl --retry 5 -L -s -f https://jdk8.java.net/download.html |grep ${platform} |grep "binaries/jdk" | grep ${arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
@@ -57,11 +57,11 @@ then
     exit 1
 fi
 
-echo "$download_url" > $destination/url
-echo "$version" > $destination/version
+echo "$download_url" > ${destination}/url
+echo "$version" > ${destination}/version
 
 if [ "$fetch_tarball" = "true" ]; then
-  curl --retry 5 --fail -L "$download_url" -o $destination/release.tgz
+  curl --retry 5 --fail -L "$download_url" -o ${destination}/release.tgz
   wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" ${download_url}
 fi
 
