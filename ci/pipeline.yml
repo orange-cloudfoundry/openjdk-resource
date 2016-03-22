@@ -16,24 +16,33 @@ resource_types:
 - name: openjdk-resource
   type: docker-image
   source:
-    repository: oorand/openjdk-resource
+    repository: orangeopensource/openjdk-resource
 
 resources:
 - name: openjdk
   type: openjdk-resource
   source:
     platform: linux
+- name: openjdk-repo
+  type: git
+  source:
+  source:
+    uri: https://github.com/o-orand/openjdk-resource
+    branch: master
+
 
 jobs:
 - name: openjdk-ut
   plan:
+  - get: openjdk-repo
   - get: openjdk
   - task: unit-test
     config:
       platform: linux
       image: docker:///busybox
       inputs:
+       - name: openjdk-repo
        - name: openjdk
       run:
-        path: ls
-        args: [-lrt]
+        path: du
+        args: [-a]

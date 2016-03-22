@@ -49,13 +49,9 @@ version=$(echo $JDK_URL| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
 
 if [ "${version}" != "${current_version}" ]
 then
-    jq -n '{
-      version: {
-        name: $version, url: $url
-      }
-    }' --arg version "$version" --arg url "$download_url" >&3
+    jq -n '[{version: $version}]' --arg version "$version"  >&3
 else
-    jq -n '{}' >&3
+    jq -n '[]' >&3
 fi
 
 
