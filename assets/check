@@ -1,8 +1,7 @@
 #!/bin/sh
 
 set -e
-
-set -x
+#set -x
 
 exec 3>&1 # make stdout available as fd 3 for the result
 exec 1>&2 # redirect all output to stderr for logging
@@ -11,23 +10,28 @@ exec 1>&2 # redirect all output to stderr for logging
 PATH=/usr/local/bin:$PATH
 
 
-payload=$(mktemp -t $TMPDIR/openjdk-resource-request.XXXXXX)
+payload=$(mktemp openjdk-resource-request.XXXXXX)
 
 # putting things you get from stdin to payload
 cat > ${payload} <&0
 
-arch=$(jq -r '.source.repository // ""' < ${payload})
-platform=$(jq -r '.source.platform // ""' < ${payload})
+jdk_type=$(jq -r '.source.type // ""' < ${payload})
+jdk_arch=$(jq -r '.source.arch // ""' < ${payload})
+jdk_platform=$(jq -r '.source.platform // ""' < ${payload})
 current_version=$(jq -r '.version.version // ""' < ${payload})
 
-if [ -z "$arch" ]; then
-  arch="x64"
+if [ -z "$jdk_type" ]; then
+  jdk_type="jdk"
 fi
 
-if [ -z "$platform" ]; then
-  platform="linux"
+
+if [ -z "$jdk_arch" ]; then
+  jdk_arch="x64"
 fi
 
+if [ -z "$jdk_platform" ]; then
+  jdk_platform="linux"
+fi
 
 
 raw_html=$(mktemp -t $TMPDIR/openjdk-resource-html.XXXXXX)
@@ -39,18 +43,19 @@ fi
 curl --retry 5 -L -s -f https://jdk8.java.net/download.html -o ${raw_html}
 
 #JDK_URL=http://www.java.net/download/jdk8u76/archive/b04/binaries/jdk-8u76-ea-bin-b04-linux-x64-25_jan_2016.tar.gz
-jdk_url=$(echo "${raw_html}" |grep ${platform} |grep "binaries/jdk" | grep ${arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
-echo "Cheking url: ${jdk_url}"
+jdk_url=$(cat "${raw_html}" |grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
+echo "Extracted url: ${jdk_url}"
 
-version=$(echo ${jdk_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
+#version=$(echo ${jdk_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
+version=$(echo ${jdk_url}| awk -F'[/]' '{print $5}')
 echo "version found: ${version}"
 
 if [ "${version}" != "${current_version}" ]
 then
     echo "New version detected (previous: ${current_version})"
-    jq -n '[{"version": "$version"}]' --arg version "$version"  >&3
+    jq -n '[{"version": $version}]' --arg version "$version"  >&3
 else
     jq -n '[]' >&3
 fi
 
-set +x
+#set +x

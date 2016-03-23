@@ -23,17 +23,23 @@ payload=$(mktemp -t $TMPDIR/openjdk-resource-in-request.XXXXXX)
 # putting things you get from stdin to payload
 cat > ${payload} <&0
 
-arch=$(jq -r '.source.repository // ""' < ${payload})
-platform=$(jq -r '.source.platform // ""' < ${payload})
+jdk_type=$(jq -r '.source.type // ""' < ${payload})
+jdk_arch=$(jq -r '.source.arch // ""' < ${payload})
+jdk_platform=$(jq -r '.source.platform // ""' < ${payload})
 version=$(jq -r '.version.version // ""' < ${payload})
 fetch_tarball=$(jq -r '.params.tarball != false' < ${payload})
 
-if [ -z "$arch" ]; then
-  arch="x64"
+if [ -z "$jdk_type" ]; then
+  jdk_type="jdk"
 fi
 
-if [ -z "$platform" ]; then
-  platform="linux"
+
+if [ -z "$jdk_arch" ]; then
+  jdk_arch="x64"
+fi
+
+if [ -z "$jdk_platform" ]; then
+  jdk_platform="linux"
 fi
 
 if [ -z "$version" ]; then
@@ -44,12 +50,12 @@ fi
 
 mkdir -p ${destination}
 
+download_url=$(curl --retry 5 -L -s -f https://jdk8.java.net/download.html|grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
+echo "Extracted url: ${download_url}"
 
-download_url=$(curl --retry 5 -L -s -f https://jdk8.java.net/download.html |grep ${platform} |grep "binaries/jdk" | grep ${arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
-echo "Cheking url: ${download_url}"
+detected_version=$(echo ${download_url}| awk -F'[/]' '{print $5}')
 
-detected_version=$(echo ${download_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
-echo "detected_version: ${detected_version}"
+echo "Detected version: ${detected_version}"
 
 if [ "${detected_version}" != "${version}" ]
 then
@@ -62,7 +68,7 @@ echo "$version" > ${destination}/version
 
 if [ "$fetch_tarball" = "true" ]; then
   curl --retry 5 --fail -L "$download_url" -o ${destination}/release.tgz
-  wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" ${download_url}
+#  wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" ${download_url}
 fi
 
 jq -n '{
