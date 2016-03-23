@@ -12,13 +12,13 @@ In your bosh deployment manifest, add to the `groundcrew.additional_resource_typ
 ```
 
 ## Source Configuration
-Default value **bold**
-* `type`: *Optional.* Value: [**jdk**|jre].
+Default value *bold*
+* `type`: *Optional.* Value: [*jdk*|jre].
     Example: todo
 
-* `platform`: *Optional.* target execution platform. Value [**linux**,...]
+* `platform`: *Optional.* target execution platform. Value [*linux*,...]
 
-* `arch`: *Optional* target platform architecture. Value [**x64**,...]
+* `arch`: *Optional* target platform architecture. Value [*x64*,...]
 
 ## Behavior
 
@@ -32,13 +32,17 @@ Fetches a given release, placing the following in the destination:
 
 * `version`: The version number of the release.
 * `url`: A URL that can be used to download the release tarball.
-* `release.tgz`: The release tarball, if the `tarball` param is `true`.
+* `openjdk.tar.gz`: The OpenJdk tarball, if the `tarball` param is `true`.
 
-### `out`: Not Yet Implemented
+#### Parameters
+
+* `tarball`: *Optional.* Default `true`. Fetch the release tarball.
+* `output_name` : *Optional.* Default `openjdk.tar.gz`. Set a custom name for Open Jdk tarball.
+
 
 ## Example pipeline
 
-This is what I am currently using to test this resource on Concourse.
+Have a look at [our pipeline](ci/pipeline.yml).
 
 
 ## Tests

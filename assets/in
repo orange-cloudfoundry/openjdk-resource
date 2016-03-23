@@ -1,7 +1,7 @@
 #!/bin/sh
 
 set -e
-set -x
+#set -x
 
 
 exec 3>&1 # make stdout available as fd 3 for the result
@@ -18,35 +18,22 @@ fi
 PATH=/usr/local/bin:$PATH
 
 
-payload=$(mktemp -t $TMPDIR/openjdk-resource-in-request.XXXXXX)
+payload=$(mktemp $TMPDIR/openjdk-resource-in-request.XXXXXX)
 
 # putting things you get from stdin to payload
 cat > ${payload} <&0
 
-jdk_type=$(jq -r '.source.type // ""' < ${payload})
-jdk_arch=$(jq -r '.source.arch // ""' < ${payload})
-jdk_platform=$(jq -r '.source.platform // ""' < ${payload})
+jdk_type=$(jq -r '.source.type // "jdk"' < ${payload})
+jdk_arch=$(jq -r '.source.arch // "x64"' < ${payload})
+jdk_platform=$(jq -r '.source.platform // "linux"' < ${payload})
 version=$(jq -r '.version.version // ""' < ${payload})
 fetch_tarball=$(jq -r '.params.tarball != false' < ${payload})
-
-if [ -z "$jdk_type" ]; then
-  jdk_type="jdk"
-fi
-
-
-if [ -z "$jdk_arch" ]; then
-  jdk_arch="x64"
-fi
-
-if [ -z "$jdk_platform" ]; then
-  jdk_platform="linux"
-fi
+output_name=$(jq -r '.params.output_name // "openjdk.tar.gz"' < ${payload})
 
 if [ -z "$version" ]; then
   echo "must specify version"
   exit 1
 fi
-
 
 mkdir -p ${destination}
 
@@ -67,8 +54,7 @@ echo "$download_url" > ${destination}/url
 echo "$version" > ${destination}/version
 
 if [ "$fetch_tarball" = "true" ]; then
-  curl --retry 5 --fail -L "$download_url" -o ${destination}/release.tgz
-#  wget --no-check-certificate --no-cookies --header "Cookie: oraclelicense=accept-securebackup-cookie" ${download_url}
+  curl --retry 5 --fail -L "$download_url" -o ${destination}/${output_name}
 fi
 
 jq -n '{
@@ -80,4 +66,4 @@ jq -n '{
   ]
 }' --arg version "$version" --arg url "$download_url" >&3
 
-set +x
+#set +x

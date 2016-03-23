@@ -10,31 +10,18 @@ exec 1>&2 # redirect all output to stderr for logging
 PATH=/usr/local/bin:$PATH
 
 
-payload=$(mktemp openjdk-resource-request.XXXXXX)
+payload=$(mktemp $TMPDIR/openjdk-resource-request.XXXXXX)
 
 # putting things you get from stdin to payload
 cat > ${payload} <&0
 
-jdk_type=$(jq -r '.source.type // ""' < ${payload})
-jdk_arch=$(jq -r '.source.arch // ""' < ${payload})
-jdk_platform=$(jq -r '.source.platform // ""' < ${payload})
+
+jdk_type=$(jq -r '.source.type // "jdk"' < ${payload})
+jdk_arch=$(jq -r '.source.arch // "x64"' < ${payload})
+jdk_platform=$(jq -r '.source.platform // "linux"' < ${payload})
 current_version=$(jq -r '.version.version // ""' < ${payload})
 
-if [ -z "$jdk_type" ]; then
-  jdk_type="jdk"
-fi
-
-
-if [ -z "$jdk_arch" ]; then
-  jdk_arch="x64"
-fi
-
-if [ -z "$jdk_platform" ]; then
-  jdk_platform="linux"
-fi
-
-
-raw_html=$(mktemp -t $TMPDIR/openjdk-resource-html.XXXXXX)
+raw_html=$(mktemp $TMPDIR/openjdk-resource-html.XXXXXX)
 
 if [ -z "${current_version}" ]; then
   echo "First execution, no current version detected. Using latest..."
