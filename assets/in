@@ -31,7 +31,7 @@ fetch_tarball=$(jq -r '.params.tarball != false' < ${payload})
 output_name=$(jq -r '.params.output_name // "openjdk.tar.gz"' < ${payload})
 
 if [ -z "$version" ]; then
-  echo "must specify version"
+  echo "must specify version. Payload: ${payload}"
   exit 1
 fi
 
@@ -46,7 +46,8 @@ echo "Detected version: ${detected_version}"
 
 if [ "${detected_version}" != "${version}" ]
 then
-    echo " Detected version (${detected_version}) does not match 'in version' (${version})"
+    echo "Detected version (${detected_version}) does not match 'in version' (${version})"
+    echo "Payload: ${payload}"
     exit 1
 fi
 

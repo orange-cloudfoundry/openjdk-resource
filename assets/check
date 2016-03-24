@@ -19,6 +19,7 @@ cat > ${payload} <&0
 jdk_type=$(jq -r '.source.type // "jdk"' < ${payload})
 jdk_arch=$(jq -r '.source.arch // "x64"' < ${payload})
 jdk_platform=$(jq -r '.source.platform // "linux"' < ${payload})
+jdk_fallback_url=$(jq -r '.source.fallback_url // ""' < ${payload})
 current_version=$(jq -r '.version.version // ""' < ${payload})
 
 raw_html=$(mktemp $TMPDIR/openjdk-resource-html.XXXXXX)
@@ -27,15 +28,32 @@ if [ -z "${current_version}" ]; then
   echo "First execution, no current version detected. Using latest..."
 fi
 
-curl --retry 5 -L -s -f https://jdk8.java.net/download.html -o ${raw_html}
+curl --retry 5 -L -fail --silent https://jdk8.java.net/download.html -o ${raw_html}
 
+#JDK_URL=http://www.java.net/download/jdk8u72/archive/b02/binaries/jdk-8u72-ea-bin-b02-linux-x64-13_oct_2015.tar.gz
 #JDK_URL=http://www.java.net/download/jdk8u76/archive/b04/binaries/jdk-8u76-ea-bin-b04-linux-x64-25_jan_2016.tar.gz
 jdk_url=$(cat "${raw_html}" |grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
 echo "Extracted url: ${jdk_url}"
+if [ -z "${jdk_url}" ]
+then
+    if [ -z "${jdk_fallback_url}" ]
+    then
+        echo "ERROR - Cannot extract url and no fallback url defined."
+        exit 1
+    else
+        echo "Warning - Cannot extract url, use fallback url."
+        jdk_url=${jdk_fallback_url}
+    fi
+fi
 
 #version=$(echo ${jdk_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
 version=$(echo ${jdk_url}| awk -F'[/]' '{print $5}')
 echo "version found: ${version}"
+if [ -z "${jdk_fallback_url}" ]
+then
+    echo "ERROR - No version found"
+    exit 1
+fi
 
 if [ "${version}" != "${current_version}" ]
 then
@@ -45,4 +63,4 @@ else
     jq -n '[]' >&3
 fi
 
-#set +x
+set +x

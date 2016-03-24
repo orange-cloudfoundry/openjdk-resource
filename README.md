@@ -1,6 +1,7 @@
 # Open JDK Resource
 
-Tracks update made to [Open JDK](https://jdk8.java.net/).
+Tracks update made to [Open JDK 8](https://jdk8.java.net/). This resource parse https://jdk8.java.net/download.html to get
+ Open Jdk binairies.
 
 ## Deploying to Concourse
 
@@ -14,11 +15,17 @@ In your bosh deployment manifest, add to the `groundcrew.additional_resource_typ
 ## Source Configuration
 Default value *bold*
 * `type`: *Optional.* Value: [*jdk*|jre].
+
     Example: todo
 
 * `platform`: *Optional.* target execution platform. Value [*linux*,...]
 
 * `arch`: *Optional* target platform architecture. Value [*x64*,...]
+
+* `fallback_url`: *Optional* Fallback url use to download binairies. Sometime no version is available for download. *Default: ""*
+
+    Exemple: "http://www.java.net/download/jdk8u76/archive/b04/binaries/jdk-8u76-ea-bin-b04-linux-x64-25_jan_2016.tar.gz""
+
 
 ## Behavior
 
