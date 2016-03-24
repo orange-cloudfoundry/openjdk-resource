@@ -26,36 +26,49 @@ cat > ${payload} <&0
 jdk_type=$(jq -r '.source.type // "jdk"' < ${payload})
 jdk_arch=$(jq -r '.source.arch // "x64"' < ${payload})
 jdk_platform=$(jq -r '.source.platform // "linux"' < ${payload})
-version=$(jq -r '.version.version // ""' < ${payload})
+jdk_fallback_url=$(jq -r '.source.fallback_url // ""' < ${payload})
+current_version=$(jq -r '.version.version // ""' < ${payload})
 fetch_tarball=$(jq -r '.params.tarball != false' < ${payload})
 output_name=$(jq -r '.params.output_name // "openjdk.tar.gz"' < ${payload})
 
-if [ -z "$version" ]; then
+if [ -z "$current_version" ]; then
   echo "ERROR - must specify version. Payload: $(cat ${payload})"
   exit 1
 fi
 
 mkdir -p ${destination}
 
-download_url=$(curl --retry 5 -L -s -f https://jdk8.java.net/download.html|grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
-echo "Extracted url: ${download_url}"
+jdk_download_url=$(curl --retry 5 -L -s -f https://jdk8.java.net/download.html|grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
+echo "Extracted url: ${jdk_download_url}"
+if [ -z "${jdk_download_url}" ]
+then
+    if [ -z "${jdk_fallback_url}" ]
+    then
+        echo "ERROR - Cannot extract url and no fallback url defined."
+        exit 1
+    else
+        echo "Warning - Cannot extract url, use fallback url."
+        jdk_download_url=${jdk_fallback_url}
+    fi
+fi
 
-detected_version=$(echo ${download_url}| awk -F'[/]' '{print $5}')
+
+detected_version=$(echo ${jdk_download_url}| awk -F'[/]' '{print $5}')
 
 echo "Detected version: ${detected_version}"
 
-if [ "${detected_version}" != "${version}" ]
+if [ "${detected_version}" != "${current_version}" ]
 then
-    echo "ERROR - Detected version (${detected_version}) does not match 'in version' (${version})"
+    echo "ERROR - Detected version (${detected_version}) does not match 'in version' (${current_version})"
     echo "ERROR - Payload: $(cat ${payload})"
     exit 1
 fi
 
-echo "$download_url" > ${destination}/url
-echo "$version" > ${destination}/version
+echo "$jdk_download_url" > ${destination}/url
+echo "$current_version" > ${destination}/version
 
 if [ "$fetch_tarball" = "true" ]; then
-  curl --retry 5 --fail -L "$download_url" -o ${destination}/${output_name}
+  curl --retry 5 --fail -L "$jdk_download_url" -o ${destination}/${output_name}
 fi
 
 jq -n '{
@@ -65,6 +78,6 @@ jq -n '{
   metadata: [
     {name: "url", value: $url}
   ]
-}' --arg version "$version" --arg url "$download_url" >&3
+}' --arg version "$current_version" --arg url "$jdk_download_url" >&3
 
 #set +x

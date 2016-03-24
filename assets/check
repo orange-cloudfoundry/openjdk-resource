@@ -32,9 +32,9 @@ curl --retry 5 -L -fail --silent https://jdk8.java.net/download.html -o ${raw_ht
 
 #JDK_URL=http://www.java.net/download/jdk8u72/archive/b02/binaries/jdk-8u72-ea-bin-b02-linux-x64-13_oct_2015.tar.gz
 #JDK_URL=http://www.java.net/download/jdk8u76/archive/b04/binaries/jdk-8u76-ea-bin-b04-linux-x64-25_jan_2016.tar.gz
-jdk_url=$(cat "${raw_html}" |grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
-echo "Extracted url: ${jdk_url}"
-if [ -z "${jdk_url}" ]
+jdk_download_url=$(cat "${raw_html}" |grep ${jdk_platform} |grep "binaries/${jdk_type}" | grep ${jdk_arch} |grep tar.gz|cut -d'=' -f2|cut -d'"' -f2)
+echo "Extracted url: ${jdk_download_url}"
+if [ -z "${jdk_download_url}" ]
 then
     if [ -z "${jdk_fallback_url}" ]
     then
@@ -42,12 +42,12 @@ then
         exit 1
     else
         echo "Warning - Cannot extract url, use fallback url."
-        jdk_url=${jdk_fallback_url}
+        jdk_download_url=${jdk_fallback_url}
     fi
 fi
 
 #version=$(echo ${jdk_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
-version=$(echo ${jdk_url}| awk -F'[/]' '{print $5}')
+version=$(echo ${jdk_download_url}| awk -F'[/]' '{print $5}')
 echo "version found: ${version}"
 if [ -z "${jdk_fallback_url}" ]
 then
