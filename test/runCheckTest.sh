@@ -14,5 +14,9 @@ echo "Running check test"
 for testFile in $(ls ${TEST_RESOURCE_DIR}/check-request-*.sample)
 do
     echo "Running ${testFile}"
+    echo "###################"
     ${ASSETS_DIR}/check <${testFile}
+    echo "###################"
+    echo "Done ${testFile}"
+
 done
