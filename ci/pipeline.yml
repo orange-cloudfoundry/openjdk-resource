@@ -23,6 +23,7 @@ resources:
   type: openjdk-resource
   source:
     platform: linux
+    fallback_url: http://www.java.net/download/jdk8u76/archive/b04/binaries/jdk-8u76-ea-bin-b04-linux-x64-25_jan_2016.tar.gz
 - name: openjdk-repo
   type: git
   source:
@@ -45,5 +46,7 @@ jobs:
        - name: openjdk-repo
        - name: openjdk
       run:
-        path: du
-        args: [-aH]
+#        path: du
+#        args: [-aH]
+        path: tar
+        args: [tzvf ./openjdk/openjdk.tar.gz]
