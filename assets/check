@@ -46,12 +46,20 @@ then
     fi
 fi
 
-#version=$(echo ${jdk_url}| awk -F'[/]' '{print $NF}'| awk -F'.' '{print $1}')
-version=$(echo ${jdk_download_url}| awk -F'[/]' '{print $5}')
+parsed_url=$(echo $jdk_download_url | tr "/" "\n")
+for i in  ${parsed_url}
+do
+    case $i in
+        jdk* ) version=$i
+            break
+            ;;
+    esac
+done
+
 echo "version found: ${version}"
-if [ -z "${jdk_fallback_url}" ]
+if [ -z "${version}" ]
 then
-    echo "ERROR - No version found"
+    echo "ERROR - No version found. Payload: $(cat ${payload})"
     exit 1
 fi
 

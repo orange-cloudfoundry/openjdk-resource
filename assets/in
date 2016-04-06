@@ -52,8 +52,15 @@ then
     fi
 fi
 
-
-detected_version=$(echo ${jdk_download_url}| awk -F'[/]' '{print $5}')
+parsed_url=$(echo $jdk_download_url | tr "/" "\n")
+for i in  ${parsed_url}
+do
+    case $i in
+        jdk* ) detected_version=$i
+            break
+            ;;
+    esac
+done
 
 echo "Detected version: ${detected_version}"
 
