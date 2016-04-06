@@ -1,7 +1,7 @@
-# Open JDK Resource
+# Open JDK Early Access Resource
 
-Tracks update made to [Open JDK 8](https://jdk8.java.net/). This resource parse https://jdk8.java.net/download.html to get
- Open Jdk binairies.
+Tracks update made to [Open JDK 8 Early Access Releases](https://jdk8.java.net/). This resource parse https://jdk8.java.net/download.html to get
+ Open Jdk Early Access binairies.
 
 ## Deploying to Concourse
 
